@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  db:
+    image: postgres:15-alpine
+    container_name: grocery-db
+    environment:
+      POSTGRES_DB: grocerydb
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: secret
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - grocery-network
+
+  # Spring Boot Backend
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: grocery-backend
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      DB_URL: jdbc:postgresql://db:5432/grocerydb
+      DB_USERNAME: admin
+      DB_PASSWORD: secret
+      JWT_SECRET: your-super-secret-key-that-is-long-and-secure-for-production-use
+      JWT_EXPIRATION_MS: 86400000
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
+    networks:
+      - grocery-network
+
+  # React Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: grocery-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - grocery-network
+
+volumes:
+  postgres_data:
+
+networks:
+  grocery-network:
+    driver: bridge
